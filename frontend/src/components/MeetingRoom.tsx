@@ -15,6 +15,7 @@ interface Props {
   userName: string;
 }
 
+const POLL_TIMEOUT_MS = 300_000; // 5 minutes
 const AGORA_APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID || '';
 
 export default function MeetingRoom({ roomId, userId, userName }: Props) {
@@ -128,7 +129,7 @@ export default function MeetingRoom({ roomId, userId, userName }: Props) {
     setTimeout(() => {
       clearInterval(interval);
       setIsProcessing(false);
-    }, 300000);
+    }, POLL_TIMEOUT_MS);
   }, []);
 
   const handleLeave = useCallback(async () => {

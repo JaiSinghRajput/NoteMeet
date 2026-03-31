@@ -77,5 +77,9 @@ async function processAI(meetingId: string, audioPath: string) {
     });
   } catch (error) {
     console.error('AI processing error:', error);
+    await prisma.meeting.update({
+      where: { id: meetingId },
+      data: { status: 'ENDED' },
+    }).catch(err => console.error('Failed to update meeting status after AI error:', err));
   }
 }

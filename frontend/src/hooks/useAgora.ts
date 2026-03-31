@@ -103,8 +103,13 @@ export const useAgora = (appId: string) => {
 
   useEffect(() => {
     return () => {
-      leave();
+      localVideoTrack?.stop();
+      localVideoTrack?.close();
+      localAudioTrack?.stop();
+      localAudioTrack?.close();
+      clientRef.current?.leave().catch(() => {});
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {
