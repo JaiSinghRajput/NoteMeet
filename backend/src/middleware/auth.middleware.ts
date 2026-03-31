@@ -12,9 +12,15 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
     return;
   }
 
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    res.status(500).json({ error: 'Server misconfiguration' });
+    return;
+  }
+
   const token = authHeader.split(' ')[1];
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: string };
+    const payload = jwt.verify(token, jwtSecret) as { userId: string };
     req.userId = payload.userId;
     next();
   } catch {

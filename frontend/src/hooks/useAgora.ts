@@ -101,15 +101,21 @@ export const useAgora = (appId: string) => {
     }
   }, [localAudioTrack, isAudioOn]);
 
+  const localVideoTrackRef = useRef<ILocalVideoTrack | null>(null);
+  const localAudioTrackRef = useRef<ILocalAudioTrack | null>(null);
+
+  // Keep refs in sync with state so cleanup can access latest tracks
+  useEffect(() => { localVideoTrackRef.current = localVideoTrack; }, [localVideoTrack]);
+  useEffect(() => { localAudioTrackRef.current = localAudioTrack; }, [localAudioTrack]);
+
   useEffect(() => {
     return () => {
-      localVideoTrack?.stop();
-      localVideoTrack?.close();
-      localAudioTrack?.stop();
-      localAudioTrack?.close();
+      localVideoTrackRef.current?.stop();
+      localVideoTrackRef.current?.close();
+      localAudioTrackRef.current?.stop();
+      localAudioTrackRef.current?.close();
       clientRef.current?.leave().catch(() => {});
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {
