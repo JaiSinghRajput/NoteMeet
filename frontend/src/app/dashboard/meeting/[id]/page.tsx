@@ -1,11 +1,13 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { meetingApi } from '@/lib/api';
 import { Meeting } from '@/types';
 
-export default function MeetingDetail({ params }: { params: { id: string } }) {
+export default function MeetingDetail() {
   const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -13,10 +15,10 @@ export default function MeetingDetail({ params }: { params: { id: string } }) {
     const token = localStorage.getItem('token');
     if (!token) { router.push('/'); return; }
 
-    meetingApi.getById(params.id).then(res => {
+    meetingApi.getById(id).then(res => {
       setMeeting(res.data);
     }).catch(console.error).finally(() => setLoading(false));
-  }, [params.id, router]);
+  }, [id, router]);
 
   if (loading) {
     return (

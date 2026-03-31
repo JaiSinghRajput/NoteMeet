@@ -1,11 +1,13 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import MeetingRoom from '@/components/MeetingRoom';
 import { User } from '@/types';
 
-export default function MeetingPage({ params }: { params: { roomId: string } }) {
+export default function MeetingPage() {
   const router = useRouter();
+  const params = useParams();
+  const roomId = params.roomId as string;
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export default function MeetingPage({ params }: { params: { roomId: string } }) 
 
   return (
     <MeetingRoom
-      roomId={params.roomId}
+      roomId={roomId}
       userId={user.id}
       userName={user.name}
     />
