@@ -16,7 +16,9 @@ export const uploadAudio = async (req: AuthRequest & { file?: Express.Multer.Fil
       data: { audioPath: req.file.path },
     });
 
-    processAI(meetingId, req.file.path);
+    processAI(meetingId, req.file.path).catch(err =>
+      console.error('processAI failed:', err)
+    );
 
     res.json({ message: 'Audio uploaded. Processing started.', meetingId });
   } catch (error) {

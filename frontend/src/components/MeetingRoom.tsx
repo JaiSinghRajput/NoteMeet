@@ -60,6 +60,8 @@ export default function MeetingRoom({ roomId, userId, userName }: Props) {
     return () => {
       cleanup1?.();
       cleanup2?.();
+      leave();
+      leaveRoom(roomId, userId);
     };
   }, [roomId, userId, userName]);
 
