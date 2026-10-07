@@ -6,6 +6,7 @@ import { Server } from 'socket.io';
 import authRoutes from './routes/auth.routes';
 import meetingRoutes from './routes/meeting.routes';
 import aiRoutes from './routes/ai.routes';
+import agoraRoutes from './routes/agora.routes';
 import { setupSocketHandlers } from './socket/socket.handler';
 
 dotenv.config();
@@ -15,18 +16,19 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: process.env.FRONTEND_URLS?.split(',') || 'http://localhost:3000',
     methods: ['GET', 'POST'],
   },
 });
 
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000' }));
+app.use(cors({ origin: process.env.FRONTEND_URLS?.split(',') || 'http://localhost:3000' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/meetings', meetingRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/agora', agoraRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

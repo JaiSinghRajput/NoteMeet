@@ -1,9 +1,22 @@
 import OpenAI from 'openai';
 import fs from 'fs';
+import { generateSummaryLocal } from './localllm.service';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const useLocalLLM = process.env.LOCAL_LLM_ENABLED === 'true';
+const openai = useLocalLLM ? null : new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export const transcribeAudio = async (audioFilePath: string): Promise<string> => {
+  if (useLocalLLM) {
+    // For local LLM, we'll use a simple fallback
+    // In production, you'd integrate with Whisper or similar
+    console.warn('Transcription with local LLM not yet implemented. Using placeholder.');
+    return 'Transcription placeholder - integrate with local Whisper model';
+  }
+
+  if (!openai) {
+    throw new Error('OpenAI client not initialized');
+  }
+
   const fileStream = fs.createReadStream(audioFilePath);
   const transcription = await openai.audio.transcriptions.create({
     file: fileStream,
@@ -17,6 +30,14 @@ export const generateSummary = async (transcript: string): Promise<{
   keyPoints: string[];
   actionItems: string[];
 }> => {
+  if (useLocalLLM) {
+    return generateSummaryLocal(transcript);
+  }
+
+  if (!openai) {
+    throw new Error('OpenAI client not initialized');
+  }
+
   const completion = await openai.chat.completions.create({
     model: 'gpt-4o',
     messages: [

@@ -39,4 +39,9 @@ export const aiApi = {
   getSummary: (meetingId: string) => api.get(`/api/ai/summary/${meetingId}`),
 };
 
+export const agoraApi = {
+  getToken: (channelName: string, uid: string) =>
+    api.get(`/api/agora/token`, { params: { channelName, uid } }),
+};
+
 export default api;

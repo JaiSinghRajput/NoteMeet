@@ -6,7 +6,7 @@ import { useSocket } from '@/hooks/useSocket';
 import VideoGrid from './VideoGrid';
 import MeetingControls from './MeetingControls';
 import NotesPanel from './NotesPanel';
-import { meetingApi, aiApi } from '@/lib/api';
+import { meetingApi, aiApi, agoraApi } from '@/lib/api';
 import { Meeting } from '@/types';
 
 interface Props {
@@ -20,29 +20,56 @@ const AGORA_APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID || '';
 
 export default function MeetingRoom({ roomId, userId, userName }: Props) {
   const router = useRouter();
-  const { join, leave, toggleVideo, toggleAudio, localVideoTrack, remoteUsers, isVideoOn, isAudioOn, joined } =
+  const { join, leave, toggleVideo, toggleAudio, localVideoTrack, remoteUsers, isVideoOn, isAudioOn, joined, error: agoraError } =
     useAgora(AGORA_APP_ID);
   const { joinRoom, leaveRoom, on, emit } = useSocket();
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const hasInitializedRef = useRef(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
+    if (hasInitializedRef.current) {
+      return;
+    }
+    hasInitializedRef.current = true;
+    let cancelled = false;
+
     const init = async () => {
       try {
         const res = await meetingApi.getByRoomId(roomId);
+        if (cancelled) return;
         setMeeting(res.data);
 
         if (AGORA_APP_ID) {
-          await join(roomId, null, userId);
+          try {
+            // Fetch Agora token from backend
+            const tokenRes = await agoraApi.getToken(roomId, userId);
+            if (cancelled) return;
+            const token = tokenRes.data.token;
+            if (!token) {
+              throw new Error('Invalid token received from server');
+            }
+            await join(roomId, token, userId);
+          } catch (tokenError: unknown) {
+            const err = tokenError as any;
+            const errorMsg = err?.response?.data?.error || err?.message || 'Failed to get Agora token';
+            console.error('Agora token error:', errorMsg);
+            setError(`Meeting connection failed: ${errorMsg}`);
+          }
+        } else {
+          setError('Agora not configured. Video will not work.');
         }
 
         joinRoom(roomId, userId, userName);
-      } catch (error) {
-        console.error('Failed to initialize meeting:', error);
+      } catch (initError: unknown) {
+        const err = initError as any;
+        console.error('Failed to initialize meeting:', err);
+        setError('Failed to initialize meeting: ' + (err?.message || 'Unknown error'));
       }
     };
 
@@ -58,12 +85,13 @@ export default function MeetingRoom({ roomId, userId, userName }: Props) {
     });
 
     return () => {
+      cancelled = true;
       cleanup1?.();
       cleanup2?.();
       leave();
       leaveRoom(roomId, userId);
     };
-  }, [roomId, userId, userName]);
+  }, [roomId, userId, userName, join, leave, joinRoom, leaveRoom, on]);
 
   const startRecording = useCallback(async () => {
     try {
@@ -141,8 +169,16 @@ export default function MeetingRoom({ roomId, userId, userName }: Props) {
     router.push('/dashboard');
   }, [isRecording, leave, leaveRoom, roomId, userId, router, stopRecording]);
 
+  const displayError = error || agoraError;
+
   return (
     <div className="flex h-screen bg-gray-950 text-white">
+      {displayError && (
+        <div className="fixed top-4 right-4 bg-red-900/80 border border-red-600 text-red-100 px-4 py-3 rounded-lg z-50 max-w-md">
+          <p className="font-semibold">Error</p>
+          <p className="text-sm mt-1">{displayError}</p>
+        </div>
+      )}
       <div className="flex-1 flex flex-col p-6 gap-4">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold">{meeting?.title || 'Meeting Room'}</h1>
